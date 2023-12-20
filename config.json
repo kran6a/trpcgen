@@ -1,0 +1,17 @@
+{
+  "name": "test",
+  "isDev": true,
+  "meta": {
+    "a": {},
+    "test": 1,
+    "deep": {
+      "blue": true
+    }
+  },
+  "endpoints": {
+    "hello": "query",
+    "foo": {
+      "bar": "mutation"
+    }
+  }
+}

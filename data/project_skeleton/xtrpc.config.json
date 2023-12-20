@@ -1,0 +1,12 @@
+{
+  "srcProject": ".",
+  "explicitOutputs": true,
+  "dstProject": ".",
+  "outDir": ".",
+  "outName": "index.d.ts",
+  "overwrite": true,
+  "include": {},
+  "parserOptions": {
+    "appRouterAlias": "AppRouter"
+  }
+}

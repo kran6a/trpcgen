@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "paths": {
+      "#trpc": ["./trpc.js"],
+      "#args": ["./args.js"],
+      "#meta": ["./meta.js"]
+    }
+  }
+}

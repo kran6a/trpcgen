@@ -1,0 +1,18 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+      "baseUrl": ".",
+      "rootDir": ".",
+      "noEmit": true,
+      "emitDeclarationOnly": false,
+      "skipLibCheck": true,
+      "esModuleInterop": true,
+      "incremental": false,
+      "composite": false,
+      "paths": {
+        "#trpc": ["./trpc.js"],
+        "#args": ["./args.js"],
+        "#meta": ["./meta.js"]
+      }
+    }
+}
