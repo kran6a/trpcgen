@@ -1,5 +1,6 @@
 import {publicProcedure} from "#trpc";
 import { TRPCError } from "@trpc/server";
+import Path from "node:path";
 import schema from "./endpoint.schema.ts";
 import {Project, ts, VariableDeclarationKind} from "ts-morph";
 
@@ -7,8 +8,9 @@ export default publicProcedure
     .input(schema.input)
     .output(schema.output)
     .mutation(async ({input: [router_name, procedure_type, procedure_name], ctx}) => {
-        let promises = [];
-        router_name = router_name.split('.').join('/');
+        const router_relative_path_fragments = router_name.split('.');
+        let promises: (()=>Promise<any>)[] = [];
+        const router_relative_path = router_relative_path_fragments.join(Path.sep);
         const project = new Project({
             tsConfigFilePath: `${ctx.project.root_dir}/tsconfig.json`,
             skipFileDependencyResolution: true,
@@ -22,13 +24,14 @@ export default publicProcedure
          * Router
          */
         {
-            const router_file = project.getSourceFile(`${ctx.project.root_dir}/api/${router_name}.ts`);
+            const router_file = project.getSourceFile(`${ctx.project.root_dir}/api/${router_relative_path}.ts`);
             if (!router_file)
-                throw new TRPCError({code: 'NOT_FOUND', message: `File "${ctx.project.root_dir}/api/${router_name}.ts" not found`});
-            const schema_import = router_file.getImportDeclaration(`./${router_name}.schema.ts`);
-            if (!schema_import)
-                throw new TRPCError({code: 'NOT_FOUND', message: `Import of "./${router_name}.schema.ts" is not present in the router file`});
-            schema_import.insertNamedImport(schema_import.getChildCount() - 1, procedure_name);
+                return ctx.abort(new TRPCError({code: 'NOT_FOUND', message: `File "${ctx.project.root_dir}/api/${router_relative_path}.ts" not found`}));
+            const schema_import = router_file.getImportDeclaration(`./${router_relative_path_fragments.at(-1) as string}.schema.ts`);
+            if (!schema_import){
+                return ctx.abort(new TRPCError({code: 'NOT_FOUND', message: `Import of "./${router_relative_path_fragments.at(-1) as string}.schema.ts" is not present in the router file`}));
+            }
+            schema_import.insertNamedImport(Math.max(schema_import.getNamedImports().length - 1, 0), procedure_name);
             router_file.transform(traversal => {
                 const node = traversal.visitChildren(); // return type is `ts.Node`
                 if (node.parent && ts.isCallExpression(node.parent) && node.parent?.expression?.getText() === 'router' && ts.isObjectLiteralExpression(node)) {
@@ -102,15 +105,16 @@ export default publicProcedure
                 }
                 return node;
             });
-            promises.push(router_file?.save());
+            router_file.formatText({indentMultiLineObjectLiteralBeginningOnBlankLine: true});
+            promises.push(()=>router_file.save());
         }
         /**
          * Schema
          */
         {
-            const schema_file = project.getSourceFile(`${ctx.project.root_dir}/api/${router_name}.schema.ts`);
+            const schema_file = project.getSourceFile(`${ctx.project.root_dir}/api/${router_relative_path}.schema.ts`);
             if (!schema_file)
-                throw new TRPCError({code: 'NOT_FOUND', message: `File "${ctx.project.root_dir}/api/${router_name}.schema.ts" not found`});
+                return ctx.abort(new TRPCError({code: 'NOT_FOUND', message: `File "${ctx.project.root_dir}/api/${router_relative_path}.schema.ts" not found`}));
             schema_file.addVariableStatement({
                 isExported: true,
                 declarationKind: VariableDeclarationKind.Const,
@@ -123,8 +127,8 @@ export default publicProcedure
                         .writeLine("output: z.void(),")
                         .write("} satisfies EndpointSchema")
                 }]
-            }).formatText({indentMultiLineObjectLiteralBeginningOnBlankLine: true, ensureNewLineAtEndOfFile: false})
-            promises.push(schema_file?.save());
+            }).formatText({indentMultiLineObjectLiteralBeginningOnBlankLine: true, ensureNewLineAtEndOfFile: false});
+            promises.push(()=>schema_file?.save());
         }
-        await Promise.all(promises);
+        await Promise.all(promises.map(x=>x()));
     });

@@ -8,7 +8,7 @@
     "trpcgen": "generate.ts"
   },
   "scripts": {
-    "build": "bun build --minify ./cli.ts --compile --outfile cli"
+    "build": "bun build ./cli.ts --compile --outfile cli.bin"
   },
   "author": "",
   "license": "ISC",
