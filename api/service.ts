@@ -27,6 +27,8 @@ export default publicProcedure
             const service_file = project.createSourceFile(`${ctx.project.root_dir}/services/${service_name}.ts`, service(service_name), {overwrite: false});
             const service_interface_file = project.createSourceFile(`${ctx.project.root_dir}/services/${service_name}.interface.ts`, service_interface(service_name), {overwrite: false});
             const ctx_file = project.getSourceFile(`${ctx.project.root_dir}/context.ts`);
+            if (!ctx_file)
+                return ctx.abort(new TRPCError({code: 'NOT_FOUND', message: `File "${ctx.project.root_dir}/context.ts" not found`}));
             service_file.formatText({ensureNewLineAtEndOfFile: false});
             service_interface_file.formatText({ensureNewLineAtEndOfFile: false});
             promises.push(()=>service_file.save(), ()=>service_interface_file.save());
@@ -34,8 +36,6 @@ export default publicProcedure
              * Add to ctx type
              */
             {
-                if (!ctx_file)
-                    return ctx.abort(new TRPCError({code: 'NOT_FOUND', message: `File "${ctx.project.root_dir}/context.ts" not found`}));
                 const import_declarations = ctx_file.getImportDeclarations();
                 ctx_file.insertImportDeclaration(import_declarations.length, {
                     defaultImport: service_name,
