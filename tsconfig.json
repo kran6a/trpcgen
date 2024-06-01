@@ -1,4 +1,5 @@
 {
+  "extends": "@tsconfig/strictest",
   "compilerOptions": {
     "baseUrl": ".",
     "strict": true,
@@ -6,10 +7,11 @@
     "lib": ["ESNext"],
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "moduleDetection": "force",
     "composite": true,
     "strictFunctionTypes": true,
+    "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "emitDeclarationOnly": true
