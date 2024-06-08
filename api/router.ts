@@ -10,7 +10,7 @@ export default publicProcedure
     .input(schema.input)
     .output(schema.output)
     .mutation(async ({input: [router_name], ctx}) => {
-        const promises: (()=>Promise<any>)[] = [];
+        const tasks: (Promise<any>)[] = [];
         const router_relative_path_fragments = router_name.split('.');
         const project = new Project({
             tsConfigFilePath: `${ctx.project.root_dir}/tsconfig.json`,
@@ -28,7 +28,7 @@ export default publicProcedure
             const router_file = project.createSourceFile(`${ctx.project.root_dir}/api/${router_relative_path_fragments.join(Path.sep)}.ts`, router_index(router_relative_path_fragments.at(-1) as string), {overwrite: false});
             const schema_file = project.createSourceFile(`${ctx.project.root_dir}/api/${router_relative_path_fragments.join(Path.sep)}.schema.ts`, 'import {z} from "zod";\nimport type {EndpointSchema} from "#types";', {overwrite: false});
             schema_file.formatText({ensureNewLineAtEndOfFile: false});
-            promises.push(()=>router_file.save(), ()=>schema_file.save());
+            tasks.push(ctx.task("Saving router file", ()=>router_file.save()), ctx.task("Saving router schema file", ()=>schema_file.save()));
             /**
              * Add to parent router
              */
@@ -55,9 +55,9 @@ export default publicProcedure
                     return node;
                 });
                 parent_router_file.formatText({indentMultiLineObjectLiteralBeginningOnBlankLine: true});
-                promises.push(()=>parent_router_file.save());
+                tasks.push(ctx.task("Updating parent router file", ()=>parent_router_file.save()));
             }
 
-            await Promise.all(promises.map(x=>x()));
+            await Promise.all(tasks);
         }
     });
